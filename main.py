@@ -1,9 +1,6 @@
 from random import choice
 import time
 
-board = ['-', '-', '-', '-', '-', '-', '-', '-', '-']
-valid_move = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
 
 def show_board(board):
     print(board[0], board[1], board[2])
@@ -18,6 +15,8 @@ class Board:
         self.side = side
         self.winner = winner
         self.last_move = last_move
+        self.win_move = None
+        self.best_move = None
 
     def check_winner(self):
         if self.board[0] == self.board[1] == self.board[2] != '-':
@@ -50,6 +49,7 @@ class Node:
         self.draw = 0
 
     def generate_tree(self):
+        counter = 0
         for move in self.position.valid_moves:
             new_valid_moves = self.position.valid_moves.copy()
             new_board = self.position.board.copy()
@@ -65,6 +65,11 @@ class Node:
 
             if new_position.winner is not None:
                 new_node.update_grade(new_position.winner)
+                counter += 1
+                self.children[-1].win_move = True
+                if counter == 2:
+                    self.parent.position.best_move = True
+
                 continue
             elif new_valid_moves == []:
                 new_node.update_grade(new_position.winner)
@@ -84,6 +89,9 @@ class Node:
             self.parent.update_grade(winner)
 
 
+board = ['-', '-', '-', '-', '-', '-', '-', '-', '-']
+valid_move = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
 start_time = time.time()
 
 b1 = Board(board, valid_move, 'x')
@@ -97,3 +105,51 @@ print("Побед x: ", root.win_x)
 print("Побед o: ", root.win_y)
 print("Ничьих:  ", root.draw)
 print("Время подсчета: ", round(end_time - start_time, 2), 'сек')
+
+# start = root
+# show_board(start.position.board)
+# while True:
+#     move = int(input('Введите клетку куда вы хотите походить: ')) - 1
+#     for child in start.children:
+#         if move == child.position.last_move:
+#             start = child
+#             break
+#     show_board(start.position.board)
+#     best_percent = 0
+#     best_child = None
+#     for child in start.children:
+#         percent = child.win_y / (child.win_x + child.win_y + child.draw)
+#         if child.position.win_move:
+#             best_move = child
+#             break
+#         elif percent > best_percent:
+#             best_percent = percent
+#             best_child = child
+#             continue
+#     start = best_child
+#     print()
+#     show_board(start.position.board)
+
+start = root
+while True:
+    best_percent = 0
+    best_child = None
+    for child in start.children:
+        percent = child.win_x / (child.win_x + child.win_y + child.draw)
+        if child.position.win_move:
+            best_move = child
+            break
+        elif percent > best_percent:
+            best_percent = percent
+            best_child = child
+            continue
+
+    start = best_child
+    print()
+    show_board(start.position.board)
+    move = int(input('Введите клетку куда вы хотите походить: ')) - 1
+    for child in start.children:
+        if move == child.position.last_move:
+            start = child
+            break
+    show_board(start.position.board)
