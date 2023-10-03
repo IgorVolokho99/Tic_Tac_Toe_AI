@@ -6,15 +6,15 @@ class Game:
     def __init__(self, board, valid_moves):
         self.board = board
         self.valid_moves = valid_moves
-        self.b1 = Board(self.board, self.valid_moves, 'x')
+        self.b1 = Board(self.board, self.valid_moves, 'X')
         self.root = Node(self.b1)
         self.root.generate_tree()
         start_time = time.time()
         self.root.generate_tree()
         end_time = time.time()
 
-        print("Побед x: ", self.root.win_x)
-        print("Побед o: ", self.root.win_y)
+        print("Побед X: ", self.root.win_x)
+        print("Побед 0: ", self.root.win_y)
         print("Ничьих:  ", self.root.draw)
         print("Время подсчета: ", round(end_time - start_time, 2), 'сек')
         self.run()
@@ -35,6 +35,7 @@ class Game:
         while not start.position.winner and start.position.valid_moves:
             print()
             move = int(input('Введите клетку куда вы хотите походить: ')) - 1
+
             for child in start.children:
                 if move == child.position.last_move:
                     start = child
@@ -45,41 +46,11 @@ class Game:
 
             show_board(start.position.board)
             print()
-            best_percent = -1
-            best_child = None
+
             for child in start.children:
-                percent = child.win_y / (child.win_x + child.win_y + child.draw)
-                if child.position.win_move:
-                    print('Тут')
-                    best_child = child
-                    break
-                elif percent >= best_percent:
-                    deffend = False
-                    for childd in child.children:
-                        if childd.position.win_move:
-                            deffend = True
-                    if deffend:
-                        continue
-                    flag = False
-                    for childd in child.children:
+                if self.find_best_0(child, 10):
+                    start = child
 
-                        if childd.position.best_move:
-                            print('Тута')
-                            for childdd in childd.children:
-                                if childdd.position.win_move:
-                                    flag = True
-                                    break
-                            if flag:
-                                best_percent = percent
-                                best_child = child
-                                break
-                    else:
-                        best_percent = percent
-                        best_child = child
-                    if flag:
-                        break
-
-            start = best_child
             show_board(start.position.board)
             print("Побед X: ", start.win_x)
             print("Побед O: ", start.win_y)
@@ -94,19 +65,11 @@ class Game:
     def player0(self):
         start = self.root
         while not start.position.winner and start.position.valid_moves:
-            best_percent = -1
-            best_child = None
             for child in start.children:
-                percent = child.win_x / (child.win_x + child.win_y + child.draw)
-                if child.position.win_move:
-                    best_child = child
+                if self.find_best_x(child, 10):
+                    start = child
                     break
-                elif percent > best_percent:
-                    best_percent = percent
-                    best_child = child
-                    continue
 
-            start = best_child
             if not start.position.valid_moves or start.position.winner:
                 break
             print()
@@ -124,6 +87,54 @@ class Game:
         show_board(start.position.board)
         print()
         show_result(start)
+
+    def find_best_0(self, node, d):
+        if d > 0:
+            if node.position.winner == '0':
+                return True
+            elif node.position.winner is None and node.position.valid_moves == []:
+                return True
+            elif node.position.winner == 'X':
+                return False
+            elif node.children is []:
+                return True
+            else:
+                if node.position.side == '0':
+                    answers = []
+                    for child in node.children:
+                        answers.append(self.find_best_0(child, d - 1))
+                    return any(answers)
+                else:
+                    answers = []
+                    for child in node.children:
+                        answers.append(self.find_best_0(child, d - 1))
+                    return all(answers)
+        else:
+            return True
+
+    def find_best_x(self, node, d):
+        if d > 0:
+            if node.position.winner == 'X':
+                return True
+            elif node.position.winner is None and node.position.valid_moves == []:
+                return True
+            elif node.position.winner == '0':
+                return False
+            elif node.children is []:
+                return True
+            else:
+                if node.position.side == 'X':
+                    answers = []
+                    for child in node.children:
+                        answers.append(self.find_best_x(child, d - 1))
+                    return any(answers)
+                else:
+                    answers = []
+                    for child in node.children:
+                        answers.append(self.find_best_x(child, d - 1))
+                    return all(answers)
+        else:
+            return True
 
 
 def show_board(board):
@@ -184,7 +195,7 @@ class Node:
         for move in self.position.valid_moves:
             new_valid_moves = self.position.valid_moves.copy()
             new_board = self.position.board.copy()
-            new_side = 'x' if self.position.side == 'o' else 'o'
+            new_side = 'X' if self.position.side == '0' else '0'
 
             new_board[move] = self.position.side
             new_valid_moves.remove(move)
@@ -209,9 +220,9 @@ class Node:
             new_node.generate_tree()
 
     def update_grade(self, winner):
-        if winner == 'x':
+        if winner == 'X':
             self.win_x += 1
-        elif winner == 'o':
+        elif winner == '0':
             self.win_y += 1
         else:
             self.draw += 1
